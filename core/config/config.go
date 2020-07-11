@@ -16,7 +16,7 @@ var edgeconf = flag.String("edgeconfig", "", "edge app config path")
 //Docker应用加载环境参数
 const (
 	//EdgeHub协议类型
-	ENV_EDGE_HUB_PROTOCOL 	= "ENV_EDGE_HUB_PROTO"
+	ENV_EDGE_HUB_PROTOCOL 	= "EDGE_HUB_PROTO"
 	//EdgeHub地址
 	ENV_EDGE_HUB_HOST  		= "EDGE_HUB_HOST"
 	//EdgeHub端口
