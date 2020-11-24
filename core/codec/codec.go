@@ -51,8 +51,18 @@ func (c *Codec) EncodeMessage(topicType string, payload []byte) (string, []byte,
 			return "", nil, err
 		}
 		return dstTopic, data, nil
-	case TopicType_PubService:
+	case TopicType_PubService, TopicType_SubService:
 		identifier, data, err := c.encodeServiceMsg(payload)
+		if err != nil {
+			return "", nil, err
+		}
+		dstTopic, err := c.EncodeTopic(topicType, identifier)
+		if err != nil {
+			return "", nil, err
+		}
+		return dstTopic, data, nil
+	case TopicType_PubServiceReply:
+		identifier, data, err := c.encodeServiceReplyMsg(payload)
 		if err != nil {
 			return "", nil, err
 		}
@@ -84,8 +94,14 @@ func (c *Codec) DecodeMessage(topic string, payload []byte) (string, []byte, err
 			return "", nil, err
 		}
 		return topicType, data, nil
-	case TopicType_PubService:
+	case TopicType_PubService, TopicType_SubService:
 		data, err := c.decodeServiceMsg(identifier, payload)
+		if err != nil {
+			return "", nil, err
+		}
+		return topicType, data, nil
+	case TopicType_PubServiceReply:
+		data, err := c.decodeServiceReplyMsg(identifier, payload)
 		if err != nil {
 			return "", nil, err
 		}
@@ -115,6 +131,10 @@ func (c *Codec) EncodeTopic(topicType string, identifier string) (string, error)
 		topic = fmt.Sprintf(topicTemplate_PubEvent, c.AppId, identifier)
 	case TopicType_PubService:
 		topic = fmt.Sprintf(topicTemplate_PubService, c.AppId, identifier)
+	case TopicType_SubService:
+		topic = fmt.Sprintf(topicTemplate_SubService, c.ThingId, c.DeviceId, identifier)
+	case TopicType_PubServiceReply:
+		topic = fmt.Sprintf(topicTemplate_PubServiceReply, c.ThingId, c.DeviceId, identifier)
 	default:
 		return "", errors.New("unsupported topicType: " + topicType)
 	}
@@ -128,35 +148,47 @@ func (c *Codec) DecodeTopic(topic string) (string, string, string, error) {
 		return "", "", "", errors.New("invalid arguments")
 	}
 	dstUnits := strings.Split(topic, "/")
-	if len(dstUnits) != 7 {
+	if len(dstUnits) != 7 && len(dstUnits) != 8 {
 		return "", "", "", errors.New("invalid topic format")
 	}
-	if dstUnits[0] != "" || dstUnits[1] != "edge" || dstUnits[3] != "thing" {
+	if dstUnits[0] != "" || (dstUnits[1] != "edge" && dstUnits[1] != "sys") {
 		return "", "", "", errors.New("invalid topic format: " + topic)
 	}
 	//parse topic
 	topicType := ""
 	appId := dstUnits[2]
 	identifier := ""
-	if dstUnits[4] == "property" {
-		if dstUnits[6] == "post" {
-			topicType = TopicType_SubProperty
-		} else if dstUnits[6] == "control" {
-			topicType = TopicType_PubProperty
+	if dstUnits[1] == "edge" {
+		if dstUnits[4] == "property" {
+			if dstUnits[6] == "post" {
+				topicType = TopicType_SubProperty
+			} else if dstUnits[6] == "control" {
+				topicType = TopicType_PubProperty
+			}
+		} else if dstUnits[4] == "event" {
+			if dstUnits[6] == "post" {
+				topicType = TopicType_SubEvent
+			} else if dstUnits[6] == "control" {
+				topicType = TopicType_PubEvent
+			}
+			identifier = dstUnits[5]
+		} else if dstUnits[4] == "service" {
+			if dstUnits[6] == "call" {
+				topicType = TopicType_PubService
+			}
+			identifier = dstUnits[5]
 		}
-	} else if dstUnits[4] == "event" {
-		if dstUnits[6] == "post" {
-			topicType = TopicType_SubEvent
-		} else if dstUnits[6] == "control" {
-			topicType = TopicType_PubEvent
+	} else {
+		if dstUnits[5] == "service" {
+			if dstUnits[7] == "call" {
+				topicType = TopicType_SubService
+			} else if dstUnits[7] == "call_reply" {
+				topicType = TopicType_PubServiceReply
+			}
+			identifier = dstUnits[6]
 		}
-		identifier = dstUnits[5]
-	} else if dstUnits[4] == "service" {
-		if dstUnits[6] == "call" {
-			topicType = TopicType_PubService
-		}
-		identifier = dstUnits[5]
 	}
+
 	if topicType == "" {
 		return "", "", "", errors.New("invalid topic format: " + topic)
 	}
@@ -236,7 +268,7 @@ func (c *Codec) encodeServiceMsg(payload []byte) (string, []byte, error) {
 		return "", nil, err
 	}
 	msg := &MdmpServiceCallMsg{}
-	msg.ID = uuid.NewV1().String()
+	msg.ID = srv.MessageId
 	msg.Version = DefaultMessageVersion
 	msg.Type = fmt.Sprintf(MessageTypeTemplate_Service, srv.Identifier)
 	msg.Metadata = &ServiceMetadata{
@@ -249,6 +281,24 @@ func (c *Codec) encodeServiceMsg(payload []byte) (string, []byte, error) {
 		return "", nil, err
 	}
 	return srv.Identifier, result, nil
+}
+
+func (c *Codec) encodeServiceReplyMsg(payload []byte) (string, []byte, error) {
+	reply := &common.AppSdkMsgServiceReply{}
+	err := json.Unmarshal(payload, reply)
+	if err != nil {
+		return "", nil, err
+	}
+	msg := &MdmpServiceReplyMsg{}
+	msg.ID = reply.MessageId
+	msg.Version = DefaultMessageVersion
+	msg.Code = reply.Code
+	msg.Data = reply.Params
+	result, err := json.Marshal(msg)
+	if err != nil {
+		return "", nil, err
+	}
+	return reply.Identifier, result, nil
 }
 
 func (c *Codec) decodePropertyMsg(payload []byte) ([]byte, error) {
@@ -296,8 +346,26 @@ func (c *Codec) decodeServiceMsg(identifier string, payload []byte) ([]byte, err
 		return nil, err
 	}
 	srv := &common.AppSdkMsgServiceCall{}
+	srv.MessageId = msg.ID
 	srv.Identifier = identifier
 	srv.Params = msg.Params
+	result, err := json.Marshal(srv)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *Codec) decodeServiceReplyMsg(identifier string, payload []byte) ([]byte, error) {
+	msg := &MdmpServiceReplyMsg{}
+	err := json.Unmarshal(payload, msg)
+	if err != nil {
+		return nil, err
+	}
+	srv := &common.AppSdkMsgServiceCall{}
+	srv.MessageId = msg.ID
+	srv.Identifier = identifier
+	srv.Params = msg.Data
 	result, err := json.Marshal(srv)
 	if err != nil {
 		return nil, err

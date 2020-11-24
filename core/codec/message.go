@@ -59,7 +59,7 @@ type MdmpMsgReplyHeader struct {
 	//协议版本号
 	Version 	string 					`json:"version"`
 	//状态码
-	Code 		int 					`json:"code"`
+	Code 		int32 					`json:"code"`
 }
 
 /*
@@ -69,6 +69,15 @@ type MdmpServiceCallMsg struct {
 	MdmpMsgHeader
 	//服务调用数据
 	Params 		map[string]interface{} 	`json:"params"`
+}
+
+/*
+	服务调用消息回应结构定义
+*/
+type MdmpServiceReplyMsg struct {
+	MdmpMsgReplyHeader
+	//服务调用回应结果
+	Data 		map[string]interface{}	`json:"data"`
 }
 
 /*

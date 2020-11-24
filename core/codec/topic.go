@@ -14,6 +14,10 @@ const (
 	TopicType_PubEvent			= "TopicType_PubEvent"
 	//发布服务调用类型
 	TopicType_PubService 		= "TopicType_PubService"
+	//订阅服务调用类型
+	TopicType_SubService		= "TopicType_SubService"
+	//发布服务调用回应类型
+	TopicType_PubServiceReply 	= "TopicType_PubServiceReply"
 )
 
 /*
@@ -52,4 +56,20 @@ const (
 		{identifier}：服务标识id
 	*/
 	topicTemplate_PubService 	= "/edge/%s/thing/service/%s/call"
+
+	/*
+		订阅服务调用Topic模版  /sys/{ModelId}/{EntityId}/thing/service/{Identifier}/call
+		{ModelId}: 边设备模型id
+		{EntityId}: 边设备id
+		{Identifier}: 服务标识id
+	*/
+	topicTemplate_SubService 	= "/sys/%s/%s/thing/service/%s/call"
+
+	/*
+		发布服务调用回应Topic模版 /sys/{ModelId}/{EntityId}/thing/service/{Identifier}/call_reply
+	 	{ModelId}: 边设备模型id
+		{EntityId}: 边设备id
+		{Identifier}: 服务标识id
+	*/
+	topicTemplate_PubServiceReply 	= "/sys/%s/%s/thing/service/%s/call_reply"
 )

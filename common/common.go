@@ -34,6 +34,8 @@ const (
 	AppSdkMessageType_Event
 	//服务调用消息
 	AppSdkMessageType_ServiceCall
+	//服务调用消息回应
+	AppSdkMessageType_ServiceReply
 )
 
 //消息数据结构体
@@ -49,8 +51,10 @@ type AppSdkMessageData struct {
 		2. 当为AppSdkMessageType_Event类型时，Payload内容格式为*AppSdkMsgEvent通过JSON序列花之后的字符串，如下:
 			`{"identifier":"test_event_001","timestamp":1593274999806,"params":{"param1":"aaa","param2":20,"param3":"ccc"}}`
 		3. 当为AppSdkMessageType_ServiceCall类型时，Payload内容格式为*AppSdkMsgServiceCall序列化之后的字符串，如下:
-			`{"identifier":"test_service_001","params":{"param1":"aaa","param2":20,"param3":"ccc"}}`
-		4. 其他类型，暂不支持，payload为nil
+			`{"messageId":"40682013-308D-43DF-B2A3-819D5CDB08BD","identifier":"test_service_001","params":{"param1":"aaa","param2":20,"param3":"ccc"}}`
+		4. 当为AppSdkMessageType_ServiceReply类型时，Payload内容格式为*AppSdkMsgServiceReply序列化之后的字符串，如下:
+			`{"messageId":"40682013-308D-43DF-B2A3-819D5CDB08BD","identifier":"test_service_001","code":200,"params":{"param1":"aaa","param2":20,"param3":"ccc"}}`
+		5. 其他类型，暂不支持，payload为nil
 	*/
 	Payload 		[]byte					`json:"payload"`
 }
@@ -71,7 +75,16 @@ type AppSdkMsgEvent struct {
 
 //服务调用消息结构体，AppSdkMessageType为AppSdkMessageType_ServiceCall时的payload
 type AppSdkMsgServiceCall struct {
+	MessageId 		string 					`json:"messageId"`
 	Identifier 		string 					`json:"identifier"`
+	Params 			map[string]interface{} 	`json:"params"`
+}
+
+//服务调用消息结构体，AppSdkMessageType为AppSdkMessageType_ServiceReply时的payload
+type AppSdkMsgServiceReply struct {
+	MessageId 		string 					`json:"messageId"`
+	Identifier 		string 					`json:"identifier"`
+	Code			int32 					`json:"code"`
 	Params 			map[string]interface{} 	`json:"params"`
 }
 

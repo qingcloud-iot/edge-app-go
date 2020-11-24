@@ -101,13 +101,16 @@ func (c *AppCoreClient) SendMessage(data *common.AppSdkMessageData) error {
 		topicType = codec.TopicType_PubEvent
 	case common.AppSdkMessageType_ServiceCall:
 		topicType = codec.TopicType_PubService
+	case common.AppSdkMessageType_ServiceReply:
+		topicType = codec.TopicType_PubServiceReply
 	default:
 		return errors.New("APP SDK send message failed, err: unsupported message type")
 	}
 	var pubTopic string
 	var pubData []byte
 	if data.Type == common.AppSdkMessageType_Property || data.Type == common.AppSdkMessageType_Event ||
-			data.Type == common.AppSdkMessageType_ServiceCall {
+			data.Type == common.AppSdkMessageType_ServiceCall ||
+			data.Type == common.AppSdkMessageType_ServiceReply {
 		tempTopic, tempData, err := c.codecHandler.EncodeMessage(topicType, data.Payload)
 		if err != nil {
 			return err
@@ -149,6 +152,13 @@ func (c *AppCoreClient) onConnectStatus(status bool, errMsg string) {
 		} else {
 			topics = append(topics, tempTopic)
 		}
+		tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubService, "+")
+		if err != nil {
+			fmt.Printf("APP SDK onConnected EncodeTopic failed, topicType: %s, err: %s\n",
+				codec.TopicType_SubService, err.Error())
+		} else {
+			topics = append(topics, tempTopic)
+		}
 		err = c.mqttHandler.SubscribeMultiple(topics, c.onRecvData)
 		if err != nil {
 			fmt.Println("APP SDK onConnected subscribe topics failed, err: " + err.Error())
@@ -179,11 +189,11 @@ func (c *AppCoreClient) onRecvData(topic string, payload []byte) {
 	}
 	var msgType common.AppSdkMessageType
 	switch topicType {
-	case codec.TopicType_SubProperty, codec.TopicType_PubProperty:
+	case codec.TopicType_SubProperty:
 		msgType = common.AppSdkMessageType_Property
-	case codec.TopicType_SubEvent, codec.TopicType_PubEvent:
+	case codec.TopicType_SubEvent:
 		msgType = common.AppSdkMessageType_Event
-	case codec.TopicType_PubService:
+	case codec.TopicType_SubService:
 		msgType = common.AppSdkMessageType_ServiceCall
 	default:
 		msgType = common.AppSdkMessageType_Unknown
