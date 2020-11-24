@@ -20,6 +20,8 @@ const (
 	RANDOM_DATA_EVENT_PARAM_DATA = "event_value"
 )
 
+var client edge_app_go.Client
+
 //消息回调
 func onMessage(msg *common.AppSdkMessageData, param interface{}) {
 	fmt.Println("onMessage called")
@@ -28,7 +30,32 @@ func onMessage(msg *common.AppSdkMessageData, param interface{}) {
 		return
 	}
 	fmt.Println("msg type:", msg.Type)
-	fmt.Println("msg payload:", msg.Payload)
+	fmt.Println("msg payload:", string(msg.Payload))
+	if msg.Type == common.AppSdkMessageType_ServiceCall {
+		info := &common.AppSdkMsgServiceCall{}
+		err := json.Unmarshal(msg.Payload, info)
+		if err != nil {
+			fmt.Println("onMessage Unmarshal failed,", err.Error())
+			return
+		}
+		respData := &common.AppSdkMsgServiceReply{
+			MessageId: info.MessageId,
+			Identifier: info.Identifier,
+			Code: 200,
+			Params: info.Params,
+		}
+		respPayload, _ := json.Marshal(respData)
+		replyMsg := &common.AppSdkMessageData{
+			Type: common.AppSdkMessageType_ServiceReply,
+			Payload: respPayload,
+		}
+		err = client.SendMessage(replyMsg)
+		if err != nil {
+			fmt.Println("onMessage CallReply SendMessage failed,", err.Error())
+			return
+		}
+		fmt.Println("onMessage CallReply SendMessage success")
+	}
 }
 
 //sdk事件回调
@@ -93,11 +120,12 @@ func main() {
 		MessageCB: onMessage,
 		EventCB: onSdkEvent,
 	}
-	client, err := edge_app_go.NewClient(options)
+	cli, err := edge_app_go.NewClient(options)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
+	client = cli
 	err = client.Init()
 	if err != nil {
 		fmt.Println(err.Error())
