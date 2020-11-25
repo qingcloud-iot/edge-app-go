@@ -38,23 +38,26 @@ func onMessage(msg *common.AppSdkMessageData, param interface{}) {
 			fmt.Println("onMessage Unmarshal failed,", err.Error())
 			return
 		}
-		respData := &common.AppSdkMsgServiceReply{
-			MessageId: info.MessageId,
-			Identifier: info.Identifier,
-			Code: 200,
-			Params: info.Params,
+		//只处理自己关心的服务调用
+		if info.Identifier == "test_app_call" {
+			respData := &common.AppSdkMsgServiceReply{
+				MessageId: info.MessageId,
+				Identifier: info.Identifier,
+				Code: 200,
+				Params: info.Params,
+			}
+			respPayload, _ := json.Marshal(respData)
+			replyMsg := &common.AppSdkMessageData{
+				Type: common.AppSdkMessageType_ServiceReply,
+				Payload: respPayload,
+			}
+			err = client.SendMessage(replyMsg)
+			if err != nil {
+				fmt.Println("onMessage CallReply SendMessage failed,", err.Error())
+				return
+			}
+			fmt.Println("onMessage CallReply SendMessage success")
 		}
-		respPayload, _ := json.Marshal(respData)
-		replyMsg := &common.AppSdkMessageData{
-			Type: common.AppSdkMessageType_ServiceReply,
-			Payload: respPayload,
-		}
-		err = client.SendMessage(replyMsg)
-		if err != nil {
-			fmt.Println("onMessage CallReply SendMessage failed,", err.Error())
-			return
-		}
-		fmt.Println("onMessage CallReply SendMessage success")
 	}
 }
 
