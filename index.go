@@ -20,6 +20,8 @@ type Options struct {
 	EventCB			common.AppSdkEventCB
 	//事件回调处理函数的用户自定义参数
 	EventParam    	interface{}
+	//订阅的服务调用的id数组
+	ServiceIds		[]string
 }
 
 /*
@@ -42,6 +44,6 @@ func NewClient(opt *Options) (Client, error) {
 	if opt == nil {
 		return nil, errors.New("options is nil")
 	}
-	obj := core.NewAppCoreClient(opt.Type, opt.MessageCB, opt.MessageParam, opt.EventCB, opt.EventParam)
+	obj := core.NewAppCoreClient(opt.Type, opt.MessageCB, opt.MessageParam, opt.EventCB, opt.EventParam, opt.ServiceIds)
 	return obj, nil
 }

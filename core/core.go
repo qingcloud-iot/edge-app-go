@@ -10,13 +10,14 @@ import (
 )
 
 func NewAppCoreClient(appType common.AppSdkRuntimeType, msgCB common.AppSdkMessageCB, msgParam interface{},
-						evtCB common.AppSdkEventCB, evtParam interface{}) *AppCoreClient {
+						evtCB common.AppSdkEventCB, evtParam interface{}, srvIds []string) *AppCoreClient {
 	return &AppCoreClient{
 		appType: 		appType,
 		messageCB: 		msgCB,
 		messageParam: 	msgParam,
 		eventCB: 		evtCB,
 		eventParam:  	evtParam,
+		serviceIds: 	srvIds,
 	}
 }
 
@@ -31,6 +32,8 @@ type AppCoreClient struct {
 	eventCB			common.AppSdkEventCB
 	//事件回调处理函数的用户自定义参数
 	eventParam    	interface{}
+	//服务调用的id数组
+	serviceIds 		[]string
 	//mqtt协议处理器
 	mqttHandler 	*mqtt.MqttClient
 	//编解码处理器
@@ -152,12 +155,14 @@ func (c *AppCoreClient) onConnectStatus(status bool, errMsg string) {
 		} else {
 			topics = append(topics, tempTopic)
 		}
-		tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubService, "+")
-		if err != nil {
-			fmt.Printf("APP SDK onConnected EncodeTopic failed, topicType: %s, err: %s\n",
-				codec.TopicType_SubService, err.Error())
-		} else {
-			topics = append(topics, tempTopic)
+		for _, srvId := range c.serviceIds {
+			tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubService, srvId)
+			if err != nil {
+				fmt.Printf("APP SDK onConnected EncodeTopic failed, topicType: %s, err: %s\n",
+					codec.TopicType_SubService, err.Error())
+			} else {
+				topics = append(topics, tempTopic)
+			}
 		}
 		err = c.mqttHandler.SubscribeMultiple(topics, c.onRecvData)
 		if err != nil {

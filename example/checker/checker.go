@@ -18,6 +18,7 @@ const (
 	RANDOM_DATA_PROPERTY_ID = "random_data"
 	RANDOM_DATA_EVENT_ID = "data_event"
 	RANDOM_DATA_EVENT_PARAM_DATA = "event_value"
+	RANDOM_DATA_SERVICE_CALL_ID = "test_app_call"
 )
 
 var client edge_app_go.Client
@@ -39,7 +40,7 @@ func onMessage(msg *common.AppSdkMessageData, param interface{}) {
 			return
 		}
 		//只处理自己关心的服务调用
-		if info.Identifier == "test_app_call" {
+		if info.Identifier == RANDOM_DATA_SERVICE_CALL_ID {
 			respData := &common.AppSdkMsgServiceReply{
 				MessageId: info.MessageId,
 				Identifier: info.Identifier,
@@ -122,6 +123,7 @@ func main() {
 		Type: common.AppSdkRuntimeType_Exec,
 		MessageCB: onMessage,
 		EventCB: onSdkEvent,
+		ServiceIds: []string{RANDOM_DATA_SERVICE_CALL_ID},
 	}
 	cli, err := edge_app_go.NewClient(options)
 	if err != nil {
