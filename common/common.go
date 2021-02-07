@@ -20,6 +20,8 @@ const (
 	AppSdkRuntimeType_Exec
 )
 
+type MessageModelType int32
+
 /*
 	消息数据类型和消息数据结构定义
 */
@@ -44,6 +46,14 @@ type AppSdkMessageData struct {
 		消息类型，参考AppSdkMessageType枚举说明
 	*/
 	Type 			AppSdkMessageType				`json:"type"`
+	/*
+		物模型ID
+	*/
+	ThingId 		string 							`json:"thingId"`
+	/*
+		设备ID
+	*/
+	DeviceId 		string 							`json:"deviceId"`
 	/*
 		消息内容，为JSON字符串格式
 		1. 当为AppSdkMessageType_Property类型时，Payload内容格式为[]*AppSdkMsgProperty通过JSON序列化之后的字符串，如下：
@@ -113,3 +123,4 @@ type AppSdkEventData struct {
 	*/
 	Payload 	interface{}
 }
+

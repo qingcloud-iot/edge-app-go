@@ -23,10 +23,12 @@ const (
 	ENV_EDGE_HUB_PORT  		= "EDGE_HUB_PORT"
 	//应用id
 	ENV_EDGE_APP_ID    		= "EDGE_APP_ID"
-	//设备id
+	//边设备id
 	ENV_EDGE_DEVICE_ID 		= "EDGE_DEVICE_ID"
 	//设备模型id
 	ENV_EDGE_THING_ID  		= "EDGE_THING_ID"
+	//消息模式
+	ENV_EDGE_MSG_MODE 		= "EDGE_MSG_MODE"
 )
 
 //二进制应用初始化配置文件结构

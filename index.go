@@ -11,17 +11,19 @@ import (
 */
 type Options struct {
 	//应用类型
-	Type 			common.AppSdkRuntimeType
-	//消息回调处理函数
-	MessageCB   	common.AppSdkMessageCB
-	//消息回调处理函数的用户自定义参数
-	MessageParam  	interface{}
-	//事件回调处理函数
-	EventCB			common.AppSdkEventCB
-	//事件回调处理函数的用户自定义参数
-	EventParam    	interface{}
-	//订阅的服务调用的id数组
-	ServiceIds		[]string
+	Type 				common.AppSdkRuntimeType
+	//模型消息回调处理函数
+	MessageCB   		common.AppSdkMessageCB
+	//模型消息回调处理函数的用户自定义参数
+	MessageParam  		interface{}
+	//SDK事件回调处理函数
+	EventCB				common.AppSdkEventCB
+	//SDK事件回调处理函数的用户自定义参数
+	EventParam    		interface{}
+	//订阅的边设备服务调用的id数组
+	ServiceIds			[]string
+	//订阅子设备消息模型ID数组
+	EndpointThingIds 	[]string
 }
 
 /*
@@ -37,13 +39,20 @@ type Client interface {
 	//停止SDK
 	Stop()
 	//发送消息
-	SendMessage(*common.AppSdkMessageData) error
+	SendMessage(msgType common.AppSdkMessageType, payload []byte) error
+	//获取边设备信息
+	GetEdgeDeviceInfo() (*common.EdgeLocalInfo, error)
+	//获取子设备信息列表
+	GetEndpointInfos() ([]*common.EndpointInfo, error)
+	//调用子设备服务调用
+	CallEndpoint(thingId string, deviceId string, req *common.AppSdkMsgServiceCall) (*common.AppSdkMsgServiceReply, error)
 }
 
 func NewClient(opt *Options) (Client, error) {
 	if opt == nil {
 		return nil, errors.New("options is nil")
 	}
-	obj := core.NewAppCoreClient(opt.Type, opt.MessageCB, opt.MessageParam, opt.EventCB, opt.EventParam, opt.ServiceIds)
+	obj := core.NewAppCoreClient(opt.Type, opt.MessageCB, opt.MessageParam,
+		opt.EventCB, opt.EventParam, opt.ServiceIds, opt.EndpointThingIds)
 	return obj, nil
 }
