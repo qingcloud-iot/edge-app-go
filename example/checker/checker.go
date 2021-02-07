@@ -31,6 +31,8 @@ func onMessage(msg *common.AppSdkMessageData, param interface{}) {
 		return
 	}
 	fmt.Println("msg type:", msg.Type)
+	fmt.Println("msg thingId:", msg.ThingId)
+	fmt.Println("msg deviceId:", msg.DeviceId)
 	fmt.Println("msg payload:", string(msg.Payload))
 	if msg.Type == common.AppSdkMessageType_ServiceCall {
 		info := &common.AppSdkMsgServiceCall{}
@@ -48,11 +50,7 @@ func onMessage(msg *common.AppSdkMessageData, param interface{}) {
 				Params: info.Params,
 			}
 			respPayload, _ := json.Marshal(respData)
-			replyMsg := &common.AppSdkMessageData{
-				Type: common.AppSdkMessageType_ServiceReply,
-				Payload: respPayload,
-			}
-			err = client.SendMessage(replyMsg)
+			err = client.SendMessage(common.AppSdkMessageType_ServiceReply, respPayload)
 			if err != nil {
 				fmt.Println("onMessage CallReply SendMessage failed,", err.Error())
 				return
@@ -76,9 +74,6 @@ func postData(ctx context.Context, cli edge_app_go.Client) {
 		case <- ctx.Done():
 			return
 		case <- tm.C:
-			propMsg := &common.AppSdkMessageData{
-				Type: common.AppSdkMessageType_Property,
-			}
 			propData := make([]*common.AppSdkMsgProperty, 0)
 			//获取100以内随机数
 			rand.Seed(time.Now().Unix())
@@ -89,8 +84,8 @@ func postData(ctx context.Context, cli edge_app_go.Client) {
 				Value: strconv.Itoa(value),
 			}
 			propData = append(propData, tempProp)
-			propMsg.Payload, _ = json.Marshal(propData)
-			err := cli.SendMessage(propMsg)
+			payload, _ := json.Marshal(propData)
+			err := cli.SendMessage(common.AppSdkMessageType_Property, payload)
 			if err != nil {
 				fmt.Println("send property message failed, err:", err.Error())
 			}
@@ -102,11 +97,8 @@ func postData(ctx context.Context, cli edge_app_go.Client) {
 					Params: make(map[string]interface{}),
 				}
 				evtData.Params[RANDOM_DATA_EVENT_PARAM_DATA] = strconv.Itoa(value)
-				evtMsg := &common.AppSdkMessageData{
-					Type: common.AppSdkMessageType_Event,
-				}
-				evtMsg.Payload, _ = json.Marshal(evtData)
-				err := cli.SendMessage(evtMsg)
+				evtPayload, _ := json.Marshal(evtData)
+				err := cli.SendMessage(common.AppSdkMessageType_Event, evtPayload)
 				if err != nil {
 					fmt.Println("send event message failed, err:", err.Error())
 				}
@@ -125,6 +117,12 @@ func main() {
 		EventCB: onSdkEvent,
 		ServiceIds: []string{RANDOM_DATA_SERVICE_CALL_ID},
 	}
+	//从环境变量读取子设备的模型id，此环境变量Key为开发者自定义
+	endpointThingId := os.Getenv("ENDPOINT_THING_ID")
+	if endpointThingId != "" {
+		//订阅子设备的消息
+		options.EndpointThingIds = []string{endpointThingId}
+	}
 	cli, err := edge_app_go.NewClient(options)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -142,7 +140,27 @@ func main() {
 		client.Cleanup()
 		return
 	}
+	//测试设置子设备的服务调用
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			req := &common.AppSdkMsgServiceCall{
+				MessageId: "test_message_id",
+				Identifier: "setTemperature",
+				Params: make(map[string]interface{}),
+			}
+			req.Params["temperature"] = 35
+			resp, err := client.CallEndpoint("iott-m45OOGLBYK", "iotd-3b6d0a2e-74db-4988-ba96-f8927b1c281a", req)
+			if err != nil {
+				fmt.Println("CallEndpoint failed, err:" + err.Error())
+			} else {
+				fmt.Println("CallEndpoint Response:", resp.Code)
+			}
+		}
+
+	}()
 	ctx, cancel := context.WithCancel(context.Background())
+	//测试定时上报
 	go postData(ctx, client)
 	// signal
 	c := make(chan os.Signal, 1)

@@ -161,7 +161,7 @@ func (c *AppCoreClient) CallEndpoint(thingId string, deviceId string, req *commo
 		return nil, errors.New("APP SDK CallEndpoint failed, err: " + err.Error())
 	}
 	//generate reply topic
-	replyTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubService, req.Identifier, thingId, deviceId)
+	replyTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubServiceReply, req.Identifier, thingId, deviceId)
 	if err != nil {
 		return nil, errors.New("APP SDK CallEndpoint failed, err: " + err.Error())
 	}

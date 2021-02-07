@@ -40,7 +40,10 @@ go get github.com/qingcloud-iot/edge-app-go
 |   2  | Cleanup                               | 清除SDK                   |
 |   3  | Start                                 | 启动SDK                   |
 |   4  | Stop                                  | 停止SDK                   |
-|   5  | SendMessage                           | 发送消息                   |
+|   5  | SendMessage                           | 发送边设备消息              |
+|   5  | GetEdgeDeviceInfo                     | 获取边设备信息             |
+|   5  | GetEndpointInfos                      | 获取子设备信息列表          |
+|   5  | CallEndpoint                          | 调用子设备服务调用          |
 
 ### **SDK**使用简介
 

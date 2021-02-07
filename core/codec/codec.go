@@ -108,7 +108,7 @@ func (c *Codec) DecodeMessage(topic string, payload []byte) (string, string, str
 			return "", "", "", nil, err
 		}
 		return topicType, thingId, deviceId, data, nil
-	case TopicType_PubServiceReply:
+	case TopicType_PubServiceReply, TopicType_SubServiceReply:
 		data, err := c.decodeServiceReplyMsg(identifier, payload)
 		if err != nil {
 			return "", "", "", nil, err
@@ -141,6 +141,8 @@ func (c *Codec) EncodeTopic(topicType string, identifier string, thingId string,
 			topic = fmt.Sprintf(topicTemplateV1_SubService, thingId, deviceId, identifier)
 		case TopicType_PubServiceReply:
 			topic = fmt.Sprintf(topicTemplateV1_PubServiceReply, thingId, deviceId, identifier)
+		case TopicType_SubServiceReply:
+			topic = fmt.Sprintf(topicTemplateV1_SubServiceReply, thingId, deviceId, identifier)
 		default:
 			return "", errors.New("unsupported topicType: " + topicType)
 		}
@@ -161,6 +163,8 @@ func (c *Codec) EncodeTopic(topicType string, identifier string, thingId string,
 			topic = fmt.Sprintf(topicTemplateV2_SubService, thingId, deviceId, identifier)
 		case TopicType_PubServiceReply:
 			topic = fmt.Sprintf(topicTemplateV2_PubServiceReply, thingId, deviceId, identifier)
+		case TopicType_SubServiceReply:
+			topic = fmt.Sprintf(topicTemplateV2_SubServiceReply, thingId, deviceId, identifier)
 		default:
 			return "", errors.New("unsupported topicType: " + topicType)
 		}

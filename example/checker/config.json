@@ -1,1 +1,1 @@
-{"protocol":"tcp","hubAddr":"139.198.21.191","hubPort":1883,"appId":"2671dcd7-2e37-11eb-9e53-5254d5d2f841","deviceId":"iotd-87fb59e7-bf07-433d-a29b-fb49afe54706","thingId":"iott-wK7RqvlrMy"}
+{"protocol":"tcp","hubAddr":"192.168.12.99","hubPort":1883,"appId":"2671dcd7-2e37-11eb-9e53-5254d5d2f841","deviceId":"iotd-87fb59e7-bf07-433d-a29b-fb49afe54706","thingId":"iott-wK7RqvlrMy"}
