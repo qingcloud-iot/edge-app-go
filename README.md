@@ -45,6 +45,11 @@ go get github.com/qingcloud-iot/edge-app-go
 |   5  | GetEndpointInfos                      | 获取子设备信息列表          |
 |   5  | CallEndpoint                          | 调用子设备服务调用          |
 
+### 消息代理
+
+- 默认是消息代理模式：依赖EdgeWize中的AppControl服务进行消息转发，SDK不能直接订阅平台消息；
+- 非消息代理模式：可以直接使用平台的消息规范进行消息的订阅和发布，该模式通过配置环境变量进行设置 EDGE_PROXY_MODE=false；
+
 ### **SDK**使用简介
 
 -------
