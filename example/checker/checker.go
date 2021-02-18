@@ -112,7 +112,7 @@ func postData(ctx context.Context, cli edge_app_go.Client) {
 func main() {
 	fmt.Println("checker start")
 	options := &edge_app_go.Options{
-		Type: common.AppSdkRuntimeType_Exec,
+		Type: common.AppSdkRuntimeType_Docker,
 		MessageCB: onMessage,
 		EventCB: onSdkEvent,
 		ServiceIds: []string{RANDOM_DATA_SERVICE_CALL_ID},

@@ -27,24 +27,26 @@ const (
 	ENV_EDGE_DEVICE_ID 		= "EDGE_DEVICE_ID"
 	//设备模型id
 	ENV_EDGE_THING_ID  		= "EDGE_THING_ID"
-	//消息模式
-	ENV_EDGE_MSG_MODE 		= "EDGE_MSG_MODE"
+	//消息代理模式，为TRUE表示代理模式，为FALSE表示普通模式，为空默认为代理模式
+	ENV_EDGE_PROXY_MODE 	= "EDGE_PROXY_MODE"
 )
 
 //二进制应用初始化配置文件结构
 type EdgeConfig struct {
 	//EdgeHub协议类型
-	Protocol string 		`json:"protocol"`
+	Protocol 	string 		`json:"protocol"`
 	//EdgeHub地址
-	HubAddr  string 		`json:"hubAddr"`
+	HubAddr  	string 		`json:"hubAddr"`
 	//EdgeHub端口
-	HubPort  int    		`json:"hubPort"`
+	HubPort  	int    		`json:"hubPort"`
 	//应用id
-	AppId    string 		`json:"appId"`
+	AppId    	string 		`json:"appId"`
 	//设备id
-	DeviceId string 		`json:"deviceId"`
+	DeviceId 	string 		`json:"deviceId"`
 	//设备模型id
-	ThingId  string 		`json:"thingId"`
+	ThingId  	string 		`json:"thingId"`
+	//是否为消息代理模式
+	ProxyMode	bool		`json:"proxyMode"`
 }
 
 func (c *EdgeConfig) Load(appType common.AppSdkRuntimeType) error {
@@ -81,6 +83,12 @@ func (c *EdgeConfig) Load(appType common.AppSdkRuntimeType) error {
 		c.AppId = os.Getenv(ENV_EDGE_APP_ID)
 		c.DeviceId = os.Getenv(ENV_EDGE_DEVICE_ID)
 		c.ThingId = os.Getenv(ENV_EDGE_THING_ID)
+		proxyMode := os.Getenv(ENV_EDGE_PROXY_MODE)
+		if proxyMode == "false" {
+			c.ProxyMode = false
+		} else {
+			c.ProxyMode = true
+		}
 	} else {
 		return errors.New("Application type is not supported, appType: " + strconv.Itoa(int(appType)))
 	}

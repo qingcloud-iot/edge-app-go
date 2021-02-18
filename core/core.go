@@ -28,8 +28,6 @@ func NewAppCoreClient(appType common.AppSdkRuntimeType, msgCB common.AppSdkMessa
 type AppCoreClient struct {
 	//Runtime类型
 	appType 		common.AppSdkRuntimeType
-	//是否为消息代理模式
-	bProxyMode		bool
 	//消息回调处理函数
 	messageCB   	common.AppSdkMessageCB
 	//消息回调处理函数的用户自定义参数
@@ -58,7 +56,7 @@ func (c *AppCoreClient) Init() error {
 	if err != nil {
 		return errors.New("APP SDK init failed, err: " + err.Error())
 	}
-	c.codecHandler = codec.NewCodec(c.cfg.AppId, c.cfg.DeviceId, c.cfg.ThingId, c.bProxyMode)
+	c.codecHandler = codec.NewCodec(c.cfg.AppId, c.cfg.DeviceId, c.cfg.ThingId, c.cfg.ProxyMode)
 	clientId := fmt.Sprintf("%s/%s", c.cfg.DeviceId, c.cfg.AppId)
 	url := fmt.Sprintf("%s://%s:%d", c.cfg.Protocol, c.cfg.HubAddr, c.cfg.HubPort)
 	c.mqttHandler, err = mqtt.NewMqttClient(clientId, url, c.onConnectStatus)
@@ -247,21 +245,24 @@ func (c *AppCoreClient) onConnectStatus(status bool, errMsg string) {
 				topics = append(topics, tempTopic)
 			}
 		}
-		//Subscribe topics of endpoints
-		for _, thingId := range c.epThingIds {
-			tempTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubProperty, "+", thingId, "+")
-			if err != nil {
-				fmt.Printf("APP SDK onConnected EncodeTopic for endpoints failed, topicType: %s, err: %s\n",
-					codec.TopicType_SubProperty, err.Error())
-			} else {
-				topics = append(topics, tempTopic)
-			}
-			tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubEvent, "+", thingId, "+")
-			if err != nil {
-				fmt.Printf("APP SDK onConnected EncodeTopic for endpoints failed, topicType: %s, err: %s\n",
-					codec.TopicType_SubEvent, err.Error())
-			} else {
-				topics = append(topics, tempTopic)
+		//非代理模式下，可以直接订阅子设备的模型消息
+		if !c.cfg.ProxyMode {
+			//Subscribe topics of endpoints
+			for _, thingId := range c.epThingIds {
+				tempTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubProperty, "+", thingId, "+")
+				if err != nil {
+					fmt.Printf("APP SDK onConnected EncodeTopic for endpoints failed, topicType: %s, err: %s\n",
+						codec.TopicType_SubProperty, err.Error())
+				} else {
+					topics = append(topics, tempTopic)
+				}
+				tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubEvent, "+", thingId, "+")
+				if err != nil {
+					fmt.Printf("APP SDK onConnected EncodeTopic for endpoints failed, topicType: %s, err: %s\n",
+						codec.TopicType_SubEvent, err.Error())
+				} else {
+					topics = append(topics, tempTopic)
+				}
 			}
 		}
 		err = c.mqttHandler.SubscribeMultiple(topics, c.onRecvData)

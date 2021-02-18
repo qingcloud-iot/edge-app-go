@@ -22,7 +22,7 @@ type Options struct {
 	EventParam    		interface{}
 	//订阅的边设备服务调用的id数组
 	ServiceIds			[]string
-	//订阅子设备消息模型ID数组
+	//订阅子设备消息模型ID数组,只有在非Proxy模式下才生效
 	EndpointThingIds 	[]string
 }
 
