@@ -32,4 +32,6 @@ type EndpointInfo struct {
 	DeviceName 			string			`json:"deviceName"`
 	//模型id
 	ThingId 			string			`json:"thingId"`
+	//设备凭证
+	Token 				string 			`json:"token"`
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/qingcloud-iot/edge-app-go/core/config"
 	"github.com/qingcloud-iot/edge-app-go/core/meta"
 	"github.com/qingcloud-iot/edge-app-go/core/mqtt"
+	"github.com/satori/go.uuid"
 	"time"
 )
 
@@ -149,8 +150,11 @@ func (c *AppCoreClient) GetEndpointInfos() ([]*common.EndpointInfo, error) {
 }
 
 func (c *AppCoreClient) CallEndpoint(thingId string, deviceId string, req *common.AppSdkMsgServiceCall) (*common.AppSdkMsgServiceReply, error) {
-	if thingId == "" || deviceId == "" || req == nil {
+	if thingId == "" || deviceId == "" || req == nil || req.Identifier == "" {
 		return nil, errors.New("APP SDK CallEndpoint failed, err: invalid arguments")
+	}
+	if req.MessageId == "" {
+		req.MessageId = uuid.NewV1().String()
 	}
 	//encode message
 	tempData, _ := json.Marshal(req)
@@ -183,6 +187,10 @@ func (c *AppCoreClient) CallEndpoint(thingId string, deviceId string, req *commo
 		err = json.Unmarshal(data, replyMsg)
 		if err != nil {
 			exitCh <- errors.New("APP SDK CallEndpoint callback failed, err: " + err.Error())
+			return
+		}
+		if replyMsg.MessageId != req.MessageId {
+			//Match reply message id failed
 			return
 		}
 		replyCh <- replyMsg
