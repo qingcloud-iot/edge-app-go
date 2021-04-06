@@ -10,7 +10,7 @@ import (
 
 const (
 	DefaultKeepAlive 		= 5 * time.Second
-	DefaultWaitTimeout 		= 3 * time.Second
+	DefaultWaitTimeout 		= 5 * time.Second
 )
 
 //第一次连接成功的回调（因为paho第一次连接上之后，内部有重连机制，所以只需要处理第一连接成功的重连，保证第一次能够连接成功）
