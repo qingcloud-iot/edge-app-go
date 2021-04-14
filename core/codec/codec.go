@@ -34,7 +34,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId)
+		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId, c.ProxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -44,7 +44,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId)
+		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId, c.ProxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -54,7 +54,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId)
+		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, c.ProxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -64,7 +64,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId)
+		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, c.ProxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -74,7 +74,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId)
+		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, c.ProxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -85,31 +85,59 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 
 //将平台消息格式的数据解码成SDK接口的消息数据
 func (c *Codec) DecodeMessage(topic string, payload []byte) (string, string, string, []byte, error) {
-	topicType, thingId, deviceId, identifier, err := c.DecodeTopic(topic)
+	topicType, thingId, deviceId, identifier, err := c.DecodeTopic(topic, c.ProxyMode)
 	if err != nil {
 		return "", "", "", nil, err
 	}
 	switch topicType {
 	case TopicType_SubProperty, TopicType_PubProperty:
-		data, err := c.decodePropertyMsg(payload)
+		msg, err := c.decodePropertyMsg(payload)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		tempDeviceId := c.getDeviceIdFromModel(msg.Metadata)
+		if tempDeviceId != "" {
+			deviceId = tempDeviceId
+		}
+		data, err := c.encodePropertySdkData(msg)
 		if err != nil {
 			return "", "", "", nil, err
 		}
 		return topicType, thingId, deviceId, data, nil
 	case TopicType_SubEvent, TopicType_PubEvent:
-		data, err := c.decodeEventMsg(identifier, payload)
+		msg, err := c.decodeEventMsg(payload)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		tempDeviceId := c.getDeviceIdFromModel(msg.Metadata)
+		if tempDeviceId != "" {
+			deviceId = tempDeviceId
+		}
+		data, err := c.encodeEventSdkData(identifier, msg)
 		if err != nil {
 			return "", "", "", nil, err
 		}
 		return topicType, thingId, deviceId, data, nil
 	case TopicType_PubService, TopicType_SubService:
-		data, err := c.decodeServiceMsg(identifier, payload)
+		msg, err := c.decodeServiceCallMsg(payload)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		tempDeviceId := c.getDeviceIdFromModel(msg.Metadata)
+		if tempDeviceId != "" {
+			deviceId = tempDeviceId
+		}
+		data, err := c.encodeServiceCallSdkData(identifier, msg)
 		if err != nil {
 			return "", "", "", nil, err
 		}
 		return topicType, thingId, deviceId, data, nil
 	case TopicType_PubServiceReply, TopicType_SubServiceReply:
-		data, err := c.decodeServiceReplyMsg(identifier, payload)
+		msg, err := c.decodeServiceReplyMsg(payload)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+		data, err := c.encodeServiceReplySdkData(identifier, msg)
 		if err != nil {
 			return "", "", "", nil, err
 		}
@@ -119,12 +147,12 @@ func (c *Codec) DecodeMessage(topic string, payload []byte) (string, string, str
 }
 
 //编码Topic
-func (c *Codec) EncodeTopic(topicType string, identifier string, thingId string, deviceId string) (string, error) {
+func (c *Codec) EncodeTopic(topicType string, identifier string, thingId string, deviceId string, proxyMode bool) (string, error) {
 	if topicType == ""  {
 		return "", errors.New("invalid arguments")
 	}
 	topic := ""
-	if c.ProxyMode {
+	if proxyMode {
 		//代理模式
 		switch topicType {
 		case TopicType_SubProperty:
@@ -174,11 +202,11 @@ func (c *Codec) EncodeTopic(topicType string, identifier string, thingId string,
 }
 
 //解码Topic
-func (c *Codec) DecodeTopic(topic string) (string, string, string, string, error) {
+func (c *Codec) DecodeTopic(topic string, proxyMode bool) (string, string, string, string, error) {
 	if topic == "" {
 		return "", "", "", "", errors.New("invalid arguments")
 	}
-	if c.ProxyMode {
+	if proxyMode {
 		//代理模式
 		dstUnits := strings.Split(topic, "/")
 		if len(dstUnits) != 7 && len(dstUnits) != 8 {
@@ -364,12 +392,16 @@ func (c *Codec) encodeServiceReplyMsg(payload []byte) (string, []byte, error) {
 	return reply.Identifier, result, nil
 }
 
-func (c *Codec) decodePropertyMsg(payload []byte) ([]byte, error) {
+func (c *Codec) decodePropertyMsg(payload []byte) (*MdmpPropertyMsg, error) {
 	msg := &MdmpPropertyMsg{}
 	err := json.Unmarshal(payload, msg)
 	if err != nil {
 		return nil, err
 	}
+	return msg, nil
+}
+
+func (c *Codec) encodePropertySdkData(msg *MdmpPropertyMsg) ([]byte, error) {
 	props := make([]*common.AppSdkMsgProperty, 0)
 	for k, v := range msg.Params {
 		tempProp := &common.AppSdkMsgProperty{}
@@ -385,12 +417,16 @@ func (c *Codec) decodePropertyMsg(payload []byte) ([]byte, error) {
 	return result, nil
 }
 
-func (c *Codec) decodeEventMsg(identifier string, payload []byte) ([]byte, error) {
+func (c *Codec) decodeEventMsg(payload []byte) (*MdmpEventMsg, error) {
 	msg := &MdmpEventMsg{}
 	err := json.Unmarshal(payload, msg)
 	if err != nil {
 		return nil, err
 	}
+	return msg, nil
+}
+
+func (c *Codec) encodeEventSdkData(identifier string, msg *MdmpEventMsg) ([]byte, error) {
 	evt := &common.AppSdkMsgEvent{}
 	evt.Identifier = identifier
 	evt.Timestamp = msg.Params.Time
@@ -402,12 +438,16 @@ func (c *Codec) decodeEventMsg(identifier string, payload []byte) ([]byte, error
 	return result, nil
 }
 
-func (c *Codec) decodeServiceMsg(identifier string, payload []byte) ([]byte, error) {
+func (c *Codec) decodeServiceCallMsg(payload []byte) (*MdmpServiceCallMsg, error) {
 	msg := &MdmpServiceCallMsg{}
 	err := json.Unmarshal(payload, msg)
 	if err != nil {
 		return nil, err
 	}
+	return msg, nil
+}
+
+func (c *Codec) encodeServiceCallSdkData(identifier string, msg *MdmpServiceCallMsg) ([]byte, error) {
 	srv := &common.AppSdkMsgServiceCall{}
 	srv.MessageId = msg.ID
 	srv.Identifier = identifier
@@ -419,12 +459,16 @@ func (c *Codec) decodeServiceMsg(identifier string, payload []byte) ([]byte, err
 	return result, nil
 }
 
-func (c *Codec) decodeServiceReplyMsg(identifier string, payload []byte) ([]byte, error) {
+func (c *Codec) decodeServiceReplyMsg(payload []byte) (*MdmpServiceReplyMsg, error) {
 	msg := &MdmpServiceReplyMsg{}
 	err := json.Unmarshal(payload, msg)
 	if err != nil {
 		return nil, err
 	}
+	return msg, nil
+}
+
+func (c *Codec) encodeServiceReplySdkData(identifier string, msg *MdmpServiceReplyMsg) ([]byte, error) {
 	srv := &common.AppSdkMsgServiceReply{}
 	srv.MessageId = msg.ID
 	srv.Identifier = identifier
@@ -435,4 +479,11 @@ func (c *Codec) decodeServiceReplyMsg(identifier string, payload []byte) ([]byte
 		return nil, err
 	}
 	return result, nil
+}
+
+func (c *Codec) getDeviceIdFromModel(md interface{}) string {
+	if v, ok := md.(map[string]interface{}); ok {
+		return v["entityId"].(string)
+	}
+	return ""
 }

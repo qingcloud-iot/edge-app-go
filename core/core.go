@@ -163,7 +163,7 @@ func (c *AppCoreClient) CallEndpoint(thingId string, deviceId string, req *commo
 		return nil, errors.New("APP SDK CallEndpoint failed, err: " + err.Error())
 	}
 	//generate reply topic
-	replyTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubServiceReply, req.Identifier, thingId, deviceId)
+	replyTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubServiceReply, req.Identifier, thingId, deviceId, false)
 	if err != nil {
 		return nil, errors.New("APP SDK CallEndpoint failed, err: " + err.Error())
 	}
@@ -230,14 +230,14 @@ func (c *AppCoreClient) onConnectStatus(status bool, errMsg string) {
 		}
 		//Subscribe topics of edge device
 		topics := make([]string, 0)
-		tempTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubProperty, "+", c.cfg.ThingId, c.cfg.DeviceId)
+		tempTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubProperty, "+", c.cfg.ThingId, c.cfg.DeviceId, c.cfg.ProxyMode)
 		if err != nil {
 			fmt.Printf("APP SDK onConnected EncodeTopic failed, topicType: %s, err: %s\n",
 				codec.TopicType_SubProperty, err.Error())
 		} else {
 			topics = append(topics, tempTopic)
 		}
-		tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubEvent, "+", c.cfg.ThingId, c.cfg.DeviceId)
+		tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubEvent, "+", c.cfg.ThingId, c.cfg.DeviceId, c.cfg.ProxyMode)
 		if err != nil {
 			fmt.Printf("APP SDK onConnected EncodeTopic failed, topicType: %s, err: %s\n",
 				codec.TopicType_SubEvent, err.Error())
@@ -245,7 +245,7 @@ func (c *AppCoreClient) onConnectStatus(status bool, errMsg string) {
 			topics = append(topics, tempTopic)
 		}
 		for _, srvId := range c.serviceIds {
-			tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubService, srvId, c.cfg.ThingId, c.cfg.DeviceId)
+			tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubService, srvId, c.cfg.ThingId, c.cfg.DeviceId, c.cfg.ProxyMode)
 			if err != nil {
 				fmt.Printf("APP SDK onConnected EncodeTopic failed, topicType: %s, err: %s\n",
 					codec.TopicType_SubService, err.Error())
@@ -257,14 +257,14 @@ func (c *AppCoreClient) onConnectStatus(status bool, errMsg string) {
 		if !c.cfg.ProxyMode {
 			//Subscribe topics of endpoints
 			for _, thingId := range c.epThingIds {
-				tempTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubProperty, "+", thingId, "+")
+				tempTopic, err := c.codecHandler.EncodeTopic(codec.TopicType_SubProperty, "+", thingId, "+", c.cfg.ProxyMode)
 				if err != nil {
 					fmt.Printf("APP SDK onConnected EncodeTopic for endpoints failed, topicType: %s, err: %s\n",
 						codec.TopicType_SubProperty, err.Error())
 				} else {
 					topics = append(topics, tempTopic)
 				}
-				tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubEvent, "+", thingId, "+")
+				tempTopic, err = c.codecHandler.EncodeTopic(codec.TopicType_SubEvent, "+", thingId, "+", c.cfg.ProxyMode)
 				if err != nil {
 					fmt.Printf("APP SDK onConnected EncodeTopic for endpoints failed, topicType: %s, err: %s\n",
 						codec.TopicType_SubEvent, err.Error())
