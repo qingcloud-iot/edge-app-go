@@ -57,7 +57,7 @@ func (c *AppCoreClient) Init() error {
 	if err != nil {
 		return errors.New("APP SDK init failed, err: " + err.Error())
 	}
-	c.codecHandler = codec.NewCodec(c.cfg.AppId, c.cfg.DeviceId, c.cfg.ThingId, c.cfg.ProxyMode)
+	c.codecHandler = codec.NewCodec(c.cfg.AppId, c.cfg.DeviceId, c.cfg.ThingId)
 	clientId := fmt.Sprintf("%s/%s", c.cfg.DeviceId, c.cfg.AppId)
 	url := fmt.Sprintf("%s://%s:%d", c.cfg.Protocol, c.cfg.HubAddr, c.cfg.HubPort)
 	c.mqttHandler, err = mqtt.NewMqttClient(clientId, url, c.onConnectStatus)
@@ -124,7 +124,7 @@ func (c *AppCoreClient) SendMessage(msgType common.AppSdkMessageType, payload []
 	if msgType == common.AppSdkMessageType_Property || msgType == common.AppSdkMessageType_Event ||
 		msgType == common.AppSdkMessageType_ServiceCall ||
 		msgType == common.AppSdkMessageType_ServiceReply {
-		tempTopic, tempData, err := c.codecHandler.EncodeMessage(topicType, c.cfg.ThingId, c.cfg.DeviceId, payload)
+		tempTopic, tempData, err := c.codecHandler.EncodeMessage(topicType, c.cfg.ThingId, c.cfg.DeviceId, payload, c.cfg.ProxyMode)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func (c *AppCoreClient) CallEndpoint(thingId string, deviceId string, req *commo
 	}
 	//encode message
 	tempData, _ := json.Marshal(req)
-	callTopic, callPayload, err := c.codecHandler.EncodeMessage(codec.TopicType_PubService, thingId, deviceId, tempData)
+	callTopic, callPayload, err := c.codecHandler.EncodeMessage(codec.TopicType_PubService, thingId, deviceId, tempData, false)
 	if err != nil {
 		return nil, errors.New("APP SDK CallEndpoint failed, err: " + err.Error())
 	}
@@ -174,7 +174,7 @@ func (c *AppCoreClient) CallEndpoint(thingId string, deviceId string, req *commo
 			exitCh <- errors.New("APP SDK CallEndpoint callback failed, err: not init")
 			return
 		}
-		topicType, _, _, data, err := c.codecHandler.DecodeMessage(topic, payload)
+		topicType, _, _, data, err := c.codecHandler.DecodeMessage(topic, payload, false)
 		if err != nil {
 			exitCh <- errors.New("APP SDK CallEndpoint callback failed, err: " + err.Error())
 			return
@@ -296,7 +296,7 @@ func (c *AppCoreClient) onRecvData(topic string, payload []byte) {
 		fmt.Println("APP SDK onRecvData failed, err: not init")
 		return
 	}
-	topicType, thingId, deviceId, data, err := c.codecHandler.DecodeMessage(topic, payload)
+	topicType, thingId, deviceId, data, err := c.codecHandler.DecodeMessage(topic, payload, c.cfg.ProxyMode)
 	if err != nil {
 		fmt.Println("APP SDK onRecvData DecodeMessage failed, err: " + err.Error())
 		return

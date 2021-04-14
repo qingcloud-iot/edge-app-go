@@ -150,7 +150,7 @@ func main() {
 				Params: make(map[string]interface{}),
 			}
 			req.Params["temperature"] = 35
-			resp, err := client.CallEndpoint("iott-m45OOGLBYK", "iotd-3b6d0a2e-74db-4988-ba96-f8927b1c281a", req)
+			resp, err := client.CallEndpoint("iott-8XVmdz8iNy", "iotd-788e21a0-97f4-4dbd-889b-1230919b552b", req)
 			if err != nil {
 				fmt.Println("CallEndpoint failed, err:" + err.Error())
 			} else {
@@ -159,9 +159,9 @@ func main() {
 		}
 
 	}()
-	ctx, cancel := context.WithCancel(context.Background())
+	//ctx, cancel := context.WithCancel(context.Background())
 	//测试定时上报
-	go postData(ctx, client)
+	//go postData(ctx, client)
 	// signal
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
@@ -176,7 +176,7 @@ func main() {
 		}
 	}
 Exit:
-	cancel()
+	//cancel()
 	client.Cleanup()
 	fmt.Println("checker exit")
 }

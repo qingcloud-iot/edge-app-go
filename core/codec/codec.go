@@ -10,12 +10,11 @@ import (
 	"time"
 )
 
-func NewCodec(appId string, deviceId string, thingId string, proxyMode bool) *Codec {
+func NewCodec(appId string, deviceId string, thingId string) *Codec {
 	return &Codec{
 		AppId: appId,
 		DeviceId: deviceId,
 		ThingId: thingId,
-		ProxyMode: proxyMode,
 	}
 }
 
@@ -23,18 +22,17 @@ type Codec struct {
 	AppId 		string
 	DeviceId    string
 	ThingId 	string
-	ProxyMode   bool
 }
 
 //将SDK接口的消息数据编码成平台消息格式的数据
-func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string, payload []byte) (string, []byte, error) {
+func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string, payload []byte, proxyMode bool) (string, []byte, error) {
 	switch topicType {
 	case TopicType_SubProperty:
 		data, err := c.encodePropertyMsg(thingId, deviceId, payload)
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId, c.ProxyMode)
+		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId, proxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -44,7 +42,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId, c.ProxyMode)
+		dstTopic, err := c.EncodeTopic(topicType, "", thingId, deviceId, proxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -54,7 +52,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, c.ProxyMode)
+		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, proxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -64,7 +62,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, c.ProxyMode)
+		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, proxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -74,7 +72,7 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 		if err != nil {
 			return "", nil, err
 		}
-		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, c.ProxyMode)
+		dstTopic, err := c.EncodeTopic(topicType, identifier, thingId, deviceId, proxyMode)
 		if err != nil {
 			return "", nil, err
 		}
@@ -84,8 +82,8 @@ func (c *Codec) EncodeMessage(topicType string, thingId string, deviceId string,
 }
 
 //将平台消息格式的数据解码成SDK接口的消息数据
-func (c *Codec) DecodeMessage(topic string, payload []byte) (string, string, string, []byte, error) {
-	topicType, thingId, deviceId, identifier, err := c.DecodeTopic(topic, c.ProxyMode)
+func (c *Codec) DecodeMessage(topic string, payload []byte, proxyMode bool) (string, string, string, []byte, error) {
+	topicType, thingId, deviceId, identifier, err := c.DecodeTopic(topic, proxyMode)
 	if err != nil {
 		return "", "", "", nil, err
 	}
